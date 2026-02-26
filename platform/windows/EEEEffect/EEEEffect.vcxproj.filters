@@ -132,5 +132,8 @@
     <ClInclude Include="..\..\..\sharelibrary\sharetool\resource_manager.h">
       <Filter>sharelibrary\sharetool</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sharelibrary\sharetool\time.h">
+      <Filter>sharelibrary\effect</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

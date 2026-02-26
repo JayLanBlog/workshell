@@ -89,6 +89,14 @@ namespace component {
         projection = glm::ortho(0.0f, viewSize.x, viewSize.y, 0.0f, -1.0f, 1.0f);
     }
 
+    void UpdateViewPort(glm::vec4 viewSize) {
+        projection = glm::ortho(viewSize.x, viewSize.y, viewSize.z, viewSize.w, -1.0f, 1.0f);
+    }
+
+    void RestViewPort() {
+        projection = glm::ortho(0.0f, mViewSize.x, mViewSize.y, 0.0f, -1.0f, 1.0f);
+    }
+
     void Update(QuadParam param) {
         qudaShader->use();
         glm::vec2 position(param.x, param.y);
@@ -106,7 +114,7 @@ namespace component {
     }
 
     void QuadDraw(QuadParam param) {
-        glViewport(param.canvas.x,param.canvas.y,param.canvas.width,param.canvas.height);
+      //  glViewport(param.canvas.x,param.canvas.y,param.canvas.width,param.canvas.height);
         Update(param);
         qudaShader->use();
         mQuad->Draw();
@@ -119,9 +127,9 @@ namespace component {
         //glm::mat4 projection = glm::ortho(0.0f, 800.0f, 800.0f, 0.0f, -1.0f, 1.0f);
         glm::mat4 model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(position, 0.0f));
-        model = glm::translate(model, glm::vec3(0.5f * size.x, 0.5f * size.y, 0.0f));
+    //    model = glm::translate(model, glm::vec3(0.5f * size.x, 0.5f * size.y, 0.0f));
         //model = glm::rotate(model, glm::radians(rotate), glm::vec3(0.0f, 0.0f, 1.0f));
-        model = glm::translate(model, glm::vec3(-0.5f * size.x, -0.5f * size.y, 0.0f));
+       // model = glm::translate(model, glm::vec3(-0.5f * size.x, -0.5f * size.y, 0.0f));
         model = glm::scale(model, glm::vec3(size, 1.0f));
         //imgShader->setVec4("customColor", glm::vec4(param.color.r, param.color.g, param.color.b, param.color.a));
         imgShader->setMat4("model", model);
@@ -132,7 +140,7 @@ namespace component {
     }
 
     void ImageDraw(QuadParam param) {
-        glViewport(param.canvas.x, param.canvas.y, param.canvas.width, param.canvas.height);
+       // glViewport(param.canvas.x, param.canvas.y, param.canvas.width, param.canvas.height);
         UpdateImage(param);
         imgShader->use();
         mQuad->Draw();

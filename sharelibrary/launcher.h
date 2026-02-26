@@ -7,11 +7,27 @@
 #include "sharelibrary/effect/quad.h"
 #include "sharelibrary/configer.h"
 #include "sharelibrary/effect/component_manager.h"
+#include "sharelibrary/sharetool/time.h"
+
 
 using namespace actor;
 namespace Slotmatch {
     stari_posibile_pacanea current_state;
 
+    float bgWidth = 0.0f;
+    float bgHeight = 0.0f;
+    GLint bgTID;
+    //Texture2D* BG;
+
+    // --- 物理参数 ---
+    float rectPosX = 0.0f, rectPosY = 0.0f; // 当前位置
+    float velX = 0.0f, velY = 0.0f;         // 当前速度
+    float targetX = 0.0f, targetY = 0.0f;   // 目标位置（鼠标）
+    float k = 40.0f;                        // 弹性系数 (Spring stiffness)
+    float c = 5.0f;                         // 阻尼系数 (Damping)
+
+    util::Timer timer;
+    bool isDragging = false;
 
     component::Trangle trangle;
     GUIManager* guiManager = new GUIManager();
@@ -33,12 +49,14 @@ namespace Slotmatch {
     }
 
     vector<GUIComponent*>* generateMasks() {
-        ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+        //ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+        ImVec4 clear_color = ImVec4(1.f, 0.f, 0.f, 1.00f);
         vector<GUIComponent*>* tmp = new vector<GUIComponent*>();
         GUIComponent* ctmp = new Rectang(0, 570, { 0,0 }, { 425,0 }, { 425,500 }, { 0,500 }, "upper_p", { clear_color.x,clear_color.y,clear_color.z });
         ctmp->width = GetScreenViewWidth();
         ctmp->heigh = 500;
         tmp->push_back(ctmp);
+        clear_color = ImVec4(0.f, 1.f, 0.f, 1.00f);
         ctmp = new Rectang(0, 125, { 0,0 }, { 425,0 }, { 425,150 }, { 0,150 }, "lower_p", { clear_color.x,clear_color.y,clear_color.z });
         ctmp->width = GetScreenViewWidth();
         ctmp->heigh = 150;
@@ -82,7 +100,41 @@ namespace Slotmatch {
             }
         }
     }
+    void drawTest() {
+       
+       // float currentTime = glfwGetTime();
+        float dt = timer.record_elapsed_seconds();;
+        //lastTime = currentTime;
 
+        // 2. 物理更新：阻尼弹簧公式 F = -k*x - c*v
+        float forceX = -k * (rectPosX - targetX) - c * velX;
+        float forceY = -k * (rectPosY - targetY) - c * velY;
+
+        velX += forceX * dt;
+        velY += forceY * dt;
+        rectPosX += velX * dt;
+        rectPosY += velY * dt;
+
+        // 3. 渲染逻辑
+        glClear(GL_COLOR_BUFFER_BIT);
+        glMatrixMode(GL_PROJECTION);
+        glLoadIdentity();
+        // 设置正交投影：左, 右, 下, 上, 近, 远
+        glOrtho(-10.0, 10.0, -10.0, 10.0, -1.0, 1.0);
+
+        glMatrixMode(GL_MODELVIEW);
+        glLoadIdentity();
+        glTranslatef(rectPosX, rectPosY, 0.0f); // 应用物理计算的位置
+
+        // 画一个简单的方块
+        glBegin(GL_QUADS);
+        glColor3f(1.0f, 0.0f, 0.1f);
+        glVertex2f(-0.5f, -0.5f);
+        glVertex2f(0.5f, -0.5f);
+        glVertex2f(0.5f, 0.5f);
+        glVertex2f(-0.5f, 0.5f);
+        glEnd();
+    }
 	int loop(SDL_Window* window) {
 		bool quit = false;
         ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
@@ -95,6 +147,12 @@ namespace Slotmatch {
                 switch (event.type) {
                 case SDL_QUIT:
                     quit = true;
+                    break;
+                case SDL_MOUSEMOTION:
+       
+                    // 映射到正交投影坐标 (假设窗口 800x600，范围 -10 到 10)
+                    targetX = (event.motion.x / 800.0f) * 20.0f - 10.0f;
+                    targetY = 10.0f - (event.motion.y / 600.0f) * 20.0f; // 注意 Y 轴反转
                     break;
                 case SDL_WINDOWEVENT:
                     switch (event.window.event) {
@@ -155,33 +213,48 @@ namespace Slotmatch {
                 // wi::input::sdlinput::ProcessEvent(event);
             }
             ShareTool::TestGUI();
-            ImGuiIO& io = ImGui::GetIO(); (void)io;
-            glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
-            glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
-            glClear(GL_COLOR_BUFFER_BIT);
-          //  paintSymbols(0.1);
+          //  ImGuiIO& io = ImGui::GetIO(); (void)io;
+          //  glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+          //  glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
+          //  glClear(GL_COLOR_BUFFER_BIT);
+          ////  paintSymbols(0.1);
+          //  component::Canvas canvas{ GetScreenViewWidth(), GetScreenViewHeight(),0.0,0.0 };
+          //  Color color = { 0.0,1.0,0.0,1.0 };
+          //  component::QuadParam param{ bgWidth,bgHeight, 0.0, 0.0 ,canvas, 1.0,color ,bgTID };
+          //  component::ImageDraw(param);
+          //  float raito = 0.5;
+          //  //const int SCREEN_WIDTH = 768;
+          //  //onst int SCREEN_HEIGH = 768;
 
-            if (current_state == STARTING_TO_SHUFFLE){
-                current_state = SHUFFLING;
-                paintSymbols(0);
-            }
-            else if (current_state == IDLE) {
-                paintSymbols(0);
-            }
-            else if (current_state == STOPPING_FROM_SHUFFLE) {
-                current_state = IDLE;
-                paintSymbols(0.5);
-            }
-            if (current_state == SHUFFLING) {
-                //guiManager->rotateComponent(guiManager->lever->components->at(2));
-                paintSymbols(1);
-            }
-            
-            //guiManager->drawComponentQuad();
-            for (int i = 0; i < guiManager->masks->size(); i++) {
-                guiManager->drawComponentQuad(guiManager->masks->at(i));
-            }
-
+          //  component::UpdateViewPort(glm::vec4(0.0,io.DisplaySize.x , (int)io.DisplaySize.y -200, 0 ));
+          //  glViewport(-100, 100, (int)io.DisplaySize.x , (int)io.DisplaySize.y  -200);
+          //  if (current_state == STARTING_TO_SHUFFLE){
+          //      current_state = SHUFFLING;
+          //      paintSymbols(0);
+          //  }
+          //  else if (current_state == IDLE) {
+          //      paintSymbols(0);
+          //  }
+          //  else if (current_state == STOPPING_FROM_SHUFFLE) {
+          //      current_state = IDLE;
+          //      paintSymbols(0.5);
+          //  }
+          //  if (current_state == SHUFFLING) {
+          //      //guiManager->rotateComponent(guiManager->lever->components->at(2));
+          //      paintSymbols(1);
+          //  }
+          //  
+          //  //guiManager->drawComponentQuad();
+          //  for (int i = 0; i < guiManager->masks->size(); i++) {
+          //      guiManager->drawComponentQuad(guiManager->masks->at(i));
+          //  }
+          //  component::RestViewPort();
+          //  /*
+          //    component::Canvas canvas{ GetScreenViewWidth(), GetScreenViewHeight(),0.0,0.0 };
+          //    component::QuadParam param{ component.width, component.heigh, component.getAbsolutePositionX(), component.getAbsolutePositionY() , canvas,component.scale, component.color,component.textureID };
+          //    component::ImageDraw(param);
+          //  */
+            drawTest();
             SDL_GL_SwapWindow(window);
         }
 		return 0;
@@ -229,6 +302,11 @@ namespace Slotmatch {
         guiManager->monitor = generateMonitor();
         guiManager->masks = generateMasks();
         current_state = IDLE;
+
+        Texture2D tx =  ResourceManager::LoadTexture("res/concreteTexture.png", false, "BG");
+        bgTID = tx.ID;
+        bgWidth = tx.Width;
+        bgHeight = tx.Height;
 
         int ret = loop(window);
         ShareTool::Destory();

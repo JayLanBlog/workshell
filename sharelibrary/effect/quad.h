@@ -27,6 +27,10 @@ namespace component {
 
 	void Initialize(glm::vec2 viewSize);
 	
+	void UpdateViewPort(glm::vec4 viewSize);
+
+	void RestViewPort();
+
 	void QuadDraw(QuadParam param);
 
 	void ImageDraw(QuadParam param);
